@@ -6,10 +6,7 @@
 #   Version: 0.1
 #
 
-from hashlib import blake2b
-from os import name
 from time import sleep
-from urllib import request
 import boto3
 import argparse
 import os
@@ -105,10 +102,15 @@ def returnAllWebAcls(waf):
 
     # Generic Variables
     allAcls = []
-
+    
+    if len(webAcls["WebACLs"]) <= 0:
+        print("[-] No ACLs found. Consider reconfiguring the script with the correct region/shift to global coverage.")
+        sys.exit(1)
+    
     print(f"")
     print(f"Available ACLs:")
     print(f"---")
+    
     for count, acl in enumerate(webAcls["WebACLs"]):
 
         allAcls.append(acl)
