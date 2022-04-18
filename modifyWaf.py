@@ -31,6 +31,12 @@ def updateRule(waf, ruleId):
     )
 
 
+def addIpToDynamo(ipAddress):
+    
+    dynamo = boto3.client('dynamodb')    
+    return dynamo
+    
+
 def updateIpSet(waf, ipSetId, ipType, ipValue):
 
     changeToken = waf.get_change_token()
@@ -65,9 +71,7 @@ def updateIpSet(waf, ipSetId, ipType, ipValue):
 
     if int(response["ResponseMetadata"]["HTTPStatusCode"]) == 200:
         print(f"[+] Successfully added {ipValue} to {ipSetId} ({ipSetName})")
-
-    # TODO: Add support for DynamoDb
-
+        return response["ResponseMetadata"]["HTTPStatusCode"]
 
 # Returns a single web ACL as per the selected ID
 def returnWebAcl(waf, selectedAcl, allAcls):
@@ -134,6 +138,9 @@ def configureBoto(wafType):
 # Arguments for the script
 def parseArguments():
     argParser = argparse.ArgumentParser()
+    
+    #TODO: Add support for sub-parsers
+    
     argParser.add_argument(
         "--type",
         required=True,
@@ -149,6 +156,8 @@ def parseArguments():
         help="Select the region to search for ACLs",
     )
 
+    # Add support for Sub-parsers
+    # URL: https://stackoverflow.com/questions/41698895/using-argparse-to-accept-only-one-group-of-required-arguments
     wafInputs = argParser.add_argument_group("WAF-specific Data Objects [Optional]")
     wafInputs.add_argument(
         "--web-acl-id", required=False, help="Input the WebACLId [Optional]"
@@ -173,6 +182,13 @@ def parseArguments():
         required=False,
         help="[Caution] The actual IP address to add to the IP Set",
     )
+    ipSet.add_argument(
+        "--add-dynamo",
+        default="False",
+        required=False,
+        choices=["True", "False"],
+        help="Add the IP value (provided to the IP-set in DynamoDb"
+    )
 
     args = argParser.parse_args()
     return args
@@ -189,9 +205,10 @@ def main():
         updateRule(wafClient, args.rule_id)
 
     elif args.ip_set_id:
-
         if args.ip_type and args.ip_value:
             updateIpSet(wafClient, args.ip_set_id, args.ip_type, args.ip_value)
+            if args.add_dynamo and args.add_dynamo == True:
+                addIpToDynamo(args.ip_value)
         else:
             print(
                 "[Error] Please provide the correct IP type and IP address to add to the specified IP set"
