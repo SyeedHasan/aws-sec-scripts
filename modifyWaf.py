@@ -146,7 +146,7 @@ def parseArguments():
         required=True,
         default="waf",
         choices=["waf", "waf-regional"],
-        help="Select the type of WAF (Classic, V2, Regional",
+        help="Select the type of WAF (Classic, V2, Regional)",
     )
     argParser.add_argument(
         "--region",
