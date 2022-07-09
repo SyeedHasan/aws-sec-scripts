@@ -4,7 +4,8 @@
 #   Name: returnInstances.py
 #   Owner: Syed Hasan
 #   Description: Return instances behind an Application/Classic load balancer
-#   Version: 0.1
+#   Version: 1.0
+#   Status: Complete
 #
 
 from time import sleep
@@ -37,20 +38,21 @@ def returnInstanceData(instanceIds):
 
     return response
 
+
 def returnTargetGroups(elbClient, lbArn):
 
     print(f"Finding Target Groups against ALB's ARN: {lbArn}")
     response = elbClient.describe_target_groups(
         LoadBalancerArn=lbArn
     )
-    
+
     if verbosity is True:
         pprint("Target Group Data:")
         pprint(response)
-    
+
     instanceTargetGroups = []
     instanceIds = []
-    
+
     for record in response['TargetGroups']:
         if record['TargetType'] == "instance":
             instanceTargetGroups.append(record['TargetGroupArn'])
@@ -58,14 +60,15 @@ def returnTargetGroups(elbClient, lbArn):
     for groupArn in instanceTargetGroups:
         print(f"Finding Instances against the Target Group ARN: {groupArn}")
         groupHealthResponse = elbClient.describe_target_health(
-        TargetGroupArn=groupArn
-    )
-        
+            TargetGroupArn=groupArn
+        )
+
     for group in groupHealthResponse["TargetHealthDescriptions"]:
         instanceIds.append(group['Target']['Id'])
-    
+
     print(f"Listing Instance Data for {len(instanceIds)} Instances:")
-    returnInstanceData(instanceIds) 
+    returnInstanceData(instanceIds)
+
 
 def returnApplicationLbInfo(elbClient, elbName):
     print(f"Finding Load Balancers (Name): {elbName}")
@@ -146,10 +149,10 @@ def returnClassicLbInfo(elbClient, elbName):
     return response
 
 
-def configureBoto(service):
+def configureBoto(service, profile):
 
     global session
-    session = boto3.Session(profile_name='temp')
+    session = boto3.Session(profile_name=profile)
 
     confService = session.client(service)
     return confService
@@ -157,6 +160,13 @@ def configureBoto(service):
 
 def parseArguments():
     argParser = argparse.ArgumentParser()
+
+    argParser.add_argument(
+        "--profile",
+        required=True,
+        default="default",
+        help="Select the profile with the configured AWS credentials (region and output format)",
+    )
 
     argParser.add_argument(
         "--client-type",
@@ -214,7 +224,7 @@ def main():
     else:
         args.elb_type = "elb"
 
-    elbClient = configureBoto(args.client_type)
+    elbClient = configureBoto(args.client_type, args.profile)
     if args.elb_type == "elb":
         returnClassicLbInfo(elbClient, args.elb_name)
     else:
@@ -231,7 +241,7 @@ Using the AWS CLI:
     - aws elbv2 describe-target-health --target-group-arn arn:aws:elasticloadbalancing:us-east-1:298189759279:targetgroup/my-tg-group/122653ca0900ca69  --query 'TargetHealthDescriptions[*].Target.Id'
 
 Using the Script:
-    - python .\returnInstances.py --client-type elbv2 --lb-type application --elb-name my-appp-load-balancer
-    - python .\returnInstances.py --client-type elb --lb-type classic --elb-name my-classic-lb
+    - python .\returnInstances.py --client-type elbv2 --lb-type application --elb-name my-appp-load-balancer --profile temp
+    - python .\returnInstances.py --client-type elb --lb-type classic --elb-name my-classic-lb --profile temp
 
 """
